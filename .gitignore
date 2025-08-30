@@ -1,2 +1,7 @@
 lib
 out
+*.jar
+.DS_Store
+*iml
+.idea
+.zig-cache

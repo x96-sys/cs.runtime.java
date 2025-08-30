@@ -1,16 +1,18 @@
+
+import org.x96.sys.ast2ir.converters.BookToManuscript;
+import org.x96.sys.cs.ast.book.Book;
+import org.x96.sys.cs.ir.manuscript.Manuscript;
+import org.x96.sys.cs.ir.manuscript.manifest.Manifest;
+import org.x96.sys.cs.parser.book.ParserBook;
+import org.x96.sys.cs.emit.java.impl.lexer.JavaEmitManifest;
+import org.x96.sys.lexer.Lexer;
+import org.x96.sys.lexer.token.Token;
+import org.x96.sys.lexer.visitor.Visitor;
+import org.x96.sys.parser.Tape;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import org.x96.sys.foundation.ast2ir.converters.BookToManuscript;
-import org.x96.sys.foundation.cs.ir.manuscript.Manuscript;
-import org.x96.sys.foundation.cs.ir.manuscript.manifest.Manifest;
-import org.x96.sys.foundation.cs.lexer.Lexer;
-import org.x96.sys.foundation.cs.lexer.token.Token;
-import org.x96.sys.foundation.cs.lexer.visitor.Visitor;
-import org.x96.sys.foundation.cs.parser.Tape;
-import org.x96.sys.foundation.cs.parser.book.ParserBook;
-import org.x96.sys.foundation.emit.java.impl.JavaEmitManifest;
 
 public class RunTime {
 
@@ -25,23 +27,24 @@ public class RunTime {
             case "build" -> {
                 if (args.length != 4) {
                     String usage = """
-                            Uso: build <visitorClass> <fonte_cs> <pacote_destino>
-                            m run ARGS="build one.Book sc/zero.cs sc"
+                            Uso: build <fonte_cs> <visitorClass> <pacote_destino>
+                            make run ARGS="build grammars/cs/cs.cs org.x96.sys.cs.lexer.visitors.Book org.x96.sys.cs.lexer.visitors.synthetic.Book"
                             """;
                     throw new IllegalArgumentException(usage);
                 }
-                Class<? extends Visitor> cls = loadVisitor(args[1]);
-                build(cls, args[2], args[3]);
+                Class<? extends Visitor> cls = loadVisitor(args[2]);
+                build(args[1], cls, args[3]);
             }
-            case "tknz" -> {
+            case "tokenize" -> {
                 if (args.length != 3) {
-                    throw new IllegalArgumentException("""
-                            Uso: tknz <artefato.sc> <visitorClass>
-                            m run ARGS="tknz sc/artefatos/zero.sc sc.Sc"
-                            """);
+                    throw new IllegalArgumentException(
+                            """
+                                    Uso: tokenize <artefato> <visitorClass>
+                                    m run ARGS="tokenize grammars/cs/cs.cs org.x96.sys.cs.lexer.visitors.Book"
+                                    """);
                 }
                 Class<? extends Visitor> cls = loadVisitor(args[2]);
-                tknz(args[1], cls);
+                tokenize(args[1], cls);
             }
             default -> {
                 System.err.println("Comando não reconhecido: " + command);
@@ -52,8 +55,9 @@ public class RunTime {
 
     private static void usage() {
         System.err.println("Uso:");
-        System.err.println("  java RunTime build <visitorClass> <fonte_cs> <pacote_destino>");
-        System.err.println("  java RunTime tknz <artefato.sc> <visitorClass>");
+        System.err.println(
+                "  make run ARGS=\"build grammars/cs/cs.cs org.x96.sys.cs.lexer.visitors.Book org.x96.sys.cs.lexer.visitors.synthetic.Book\"");
+        System.err.println("  m run ARGS=\"tokenize grammars/cs/cs.cs org.x96.sys.cs.lexer.visitors.Book\"");
         System.exit(1);
     }
 
@@ -61,14 +65,36 @@ public class RunTime {
         return Class.forName(className).asSubclass(Visitor.class);
     }
 
-    private static void build(Class<? extends Visitor> cls, String f, String pkg) throws IOException {
+    private static void build(String f, Class<? extends Visitor> cls, String pkg)
+            throws IOException {
         byte[] payload = Files.readAllBytes(Path.of(f));
         Token[] tokens = new Lexer(cls).lexWrapped(payload);
         var book = new ParserBook(new Tape(tokens)).parse();
+
+        // Limpar o diretório de destino antes de gerar
+        Path outDir = Path.of("src/main", pkg.replace('.', '/'));
+        cleanDirectory(outDir);
+        Files.createDirectories(outDir);
+
         gen(book, pkg);
     }
 
-    private static void tknz(String filename, Class<? extends Visitor> cls) throws IOException {
+    private static void cleanDirectory(Path dir) throws IOException {
+        if (Files.exists(dir)) {
+            Files.walk(dir)
+                    .sorted((a, b) -> b.compareTo(a)) // deletar filhos antes dos pais
+                    .forEach(
+                            path -> {
+                                try {
+                                    Files.delete(path);
+                                } catch (IOException e) {
+                                    throw new RuntimeException("Erro ao apagar: " + path, e);
+                                }
+                            });
+        }
+    }
+
+    private static void tokenize(String filename, Class<? extends Visitor> cls) throws IOException {
         byte[] payload = Files.readAllBytes(Path.of(filename));
         Token[] tokens = new Lexer(cls).lexWrapped(payload);
         for (Token token : tokens) {
@@ -76,7 +102,7 @@ public class RunTime {
         }
     }
 
-    private static void gen(org.x96.sys.foundation.cs.ast.book.Book book, String pkg) {
+    private static void gen(Book book, String pkg) {
         Manuscript manuscript = new BookToManuscript().convert(book);
         for (Manifest manifest : manuscript.manifests()) {
             JavaEmitManifest emitManifest = new JavaEmitManifest(manifest);
