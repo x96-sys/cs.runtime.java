@@ -90,6 +90,8 @@ GJF_BIN     = $(TOOLS_DIR)/gjf.jar
 GJF_URL     = https://maven.org/maven2/com/google/googlejavaformat/google-java-format/$(GJF_VERSION)/google-java-format-$(GJF_VERSION)-all-deps.jar
 GJF_SHA256  = 32342e7c1b4600f80df3471da46aee8012d3e1445d5ea1be1fb71289b07cc735
 
+DISTRO_BIN = org.x96.sys.cs.jar
+
 define deps
 $1/$2: $1
 	@expected="$($3_SHA256)"; \
@@ -161,7 +163,8 @@ $(LIB_DIR) $(TOOLS_DIR):
 
 JAVA_SOURCES := $(shell find $(SRC_MAIN) -name "*.java")
 
-CP = $(BUZZ_BIN):$(IO_BIN):$(KIND_BIN):$(TOKENIZER_BIN):$(TOKEN_BIN):$(VISITOR_BIN):$(ENTRY_BIN):$(ROUTER_BIN):$(CS_AST_BIN):$(CS_AST2IR_BIN):$(CS_IR_BIN):$(CS_EMIT_BIN):$(CS_PARSER_BIN):$(CS_LEXER_BIN):$(LEXER_BIN)
+CP   = $(BUZZ_BIN):$(IO_BIN):$(KIND_BIN):$(TOKENIZER_BIN):$(TOKEN_BIN):$(VISITOR_BIN):$(ENTRY_BIN):$(ROUTER_BIN):$(CS_AST_BIN):$(CS_AST2IR_BIN):$(CS_IR_BIN):$(CS_EMIT_BIN):$(CS_PARSER_BIN):$(CS_LEXER_BIN):$(LEXER_BIN)
+DEPS = $(BUZZ_BIN) $(IO_BIN) $(KIND_BIN) $(TOKENIZER_BIN) $(TOKEN_BIN) $(VISITOR_BIN) $(ENTRY_BIN) $(ROUTER_BIN) $(CS_AST_BIN) $(CS_AST2IR_BIN) $(CS_IR_BIN) $(CS_EMIT_BIN) $(CS_PARSER_BIN) $(CS_LEXER_BIN) $(LEXER_BIN)
 
 build: libs
 	@echo "[☕️] [compiling] [`javac --version`]"
@@ -174,6 +177,26 @@ run: build
 
 format: kit
 	@find src -name "*.java" -print0 | xargs -0 java -jar $(GJF_BIN) --aosp --replace
+
+distro:
+	@echo "Main-Class: RunTime" > manifest.txt
+	@jar cfm $(DISTRO_BIN) manifest.txt -C $(MAIN_BUILD) .
+	@rm manifest.txt
+	@echo "[📦] [cli] Empacotado com sucesso em $(DISTRO_BIN)"
+
+distro/deps: build
+	@rm -f $(DISTRO_BIN)
+	@echo "Main-Class: RunTime" > manifest.txt
+	@jar cfm $(DISTRO_BIN) manifest.txt -C $(MAIN_BUILD) .
+	@for dep in $(DEPS); do \
+		echo "[➕] Adicionando $$dep no $(DISTRO_BIN)"; \
+		jar xf $$dep; \
+		find . -name "*.class" -o -name "*.properties" -o -name "*.txt" | grep -v "META-INF" | xargs -I {} jar uf $(DISTRO_BIN) {}; \
+		find . -name "*.class" -o -name "*.properties" -o -name "*.txt" | grep -v "META-INF" | xargs rm -f; \
+		find . -type d -empty | xargs rmdir 2>/dev/null || true; \
+	done
+	@rm -f manifest.txt
+	@echo "[📦] [uber-jar] Criado em $(DISTRO_BIN)"
 
 clean/libs:
 	@rm -rf $(LIB_DIR)
