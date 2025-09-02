@@ -80,10 +80,10 @@ LEXER_BIN     = $(LIB_DIR)/org.x96.sys.lexer.jar
 LEXER_URL     = https://github.com/x96-sys/lexer.java/releases/download/v$(LEXER_VERSION)/org.x96.sys.lexer.jar
 LEXER_SHA256  = e8ba9545f1b0c1940fbfe3731326f015962501bcb3b8f03fbe89d41436c90de1
 
-CS_EMIT_VERSION = 1.0.1
+CS_EMIT_VERSION = 1.0.2
 CS_EMIT_BIN     = $(LIB_DIR)/org.x96.sys.cs.emit.jar
 CS_EMIT_URL     = https://github.com/x96-sys/cs.emit.java/releases/download/v$(CS_EMIT_VERSION)/org.x96.sys.cs.emit.jar
-CS_EMIT_SHA256  = 272409e1f87a41c00f2d138d47335d66bf6bfa76b4a7ee01fa8af562a6d45f22
+CS_EMIT_SHA256  = a10d71778f7e51d97153c24e67d78eb590f5e8a70fa5ef15c8c732c3d5e5d095
 
 GJF_VERSION = 1.28.0
 GJF_BIN     = $(TOOLS_DIR)/gjf.jar

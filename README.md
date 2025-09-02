@@ -66,7 +66,7 @@ err_follow = err i*;
 errs = stx i* err_follow+ etx;
 ```
 
-tokenize for shure
+tokenize for sure
 
 ```bash
 make run ARGS="tokenize grammars/err/err.cs org.x96.sys.cs.lexer.visitors.synthetic.Book"
