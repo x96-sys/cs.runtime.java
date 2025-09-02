@@ -80,17 +80,18 @@ LEXER_BIN     = $(LIB_DIR)/org.x96.sys.lexer.jar
 LEXER_URL     = https://github.com/x96-sys/lexer.java/releases/download/v$(LEXER_VERSION)/org.x96.sys.lexer.jar
 LEXER_SHA256  = e8ba9545f1b0c1940fbfe3731326f015962501bcb3b8f03fbe89d41436c90de1
 
-CS_EMIT_VERSION = 1.0.0
+CS_EMIT_VERSION = 1.0.1
 CS_EMIT_BIN     = $(LIB_DIR)/org.x96.sys.cs.emit.jar
 CS_EMIT_URL     = https://github.com/x96-sys/cs.emit.java/releases/download/v$(CS_EMIT_VERSION)/org.x96.sys.cs.emit.jar
-CS_EMIT_SHA256  = e7e78c4767607370eb342413a3929e7680600a9efd74d023e3790e23fce608ca
+CS_EMIT_SHA256  = 272409e1f87a41c00f2d138d47335d66bf6bfa76b4a7ee01fa8af562a6d45f22
 
 GJF_VERSION = 1.28.0
 GJF_BIN     = $(TOOLS_DIR)/gjf.jar
 GJF_URL     = https://maven.org/maven2/com/google/googlejavaformat/google-java-format/$(GJF_VERSION)/google-java-format-$(GJF_VERSION)-all-deps.jar
 GJF_SHA256  = 32342e7c1b4600f80df3471da46aee8012d3e1445d5ea1be1fb71289b07cc735
 
-DISTRO_BIN = org.x96.sys.cs.jar
+DISTRO_BIN      = org.x96.sys.cs.jar
+DISTRO_BIN_DEPS = org.x96.sys.cs-deps.jar
 
 define deps
 $1/$2: $1
@@ -185,18 +186,18 @@ distro:
 	@echo "[📦] [cli] Empacotado com sucesso em $(DISTRO_BIN)"
 
 distro/deps: build
-	@rm -f $(DISTRO_BIN)
+	@rm -f $(DISTRO_BIN_DEPS)
 	@echo "Main-Class: RunTime" > manifest.txt
-	@jar cfm $(DISTRO_BIN) manifest.txt -C $(MAIN_BUILD) .
+	@jar cfm $(DISTRO_BIN_DEPS) manifest.txt -C $(MAIN_BUILD) .
 	@for dep in $(DEPS); do \
-		echo "[➕] Adicionando $$dep no $(DISTRO_BIN)"; \
+		echo "[➕] Adicionando $$dep no $(DISTRO_BIN_DEPS)"; \
 		jar xf $$dep; \
-		find . -name "*.class" -o -name "*.properties" -o -name "*.txt" | grep -v "META-INF" | xargs -I {} jar uf $(DISTRO_BIN) {}; \
+		find . -name "*.class" -o -name "*.properties" -o -name "*.txt" | grep -v "META-INF" | xargs -I {} jar uf $(DISTRO_BIN_DEPS) {}; \
 		find . -name "*.class" -o -name "*.properties" -o -name "*.txt" | grep -v "META-INF" | xargs rm -f; \
 		find . -type d -empty | xargs rmdir 2>/dev/null || true; \
 	done
 	@rm -f manifest.txt
-	@echo "[📦] [uber-jar] Criado em $(DISTRO_BIN)"
+	@echo "[📦] [uber-jar] Criado em $(DISTRO_BIN_DEPS)"
 
 clean/libs:
 	@rm -rf $(LIB_DIR)
